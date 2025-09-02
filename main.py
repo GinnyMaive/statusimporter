@@ -1,4 +1,5 @@
 from datetime import datetime
+import glob
 import os
 import json
 import time
@@ -80,6 +81,37 @@ def get_token(auth_code):
     response.raise_for_status()
     return response.json()
 
+def handle_file_situation(creds, file):
+    file_path = try_to_find_file(f'''{BASE_EXPORT_DIR}files/{file.get('name')}''')
+    sharkey_media_id = file.get('id')
+    log_to_logfile(f'Media id {sharkey_media_id} path {file_path}')
+    gts_media_id = None
+    if DRY_RUN:
+        gts_media = upload_media_dryrun(creds, file_path, description=file.get('comment'))
+    else:
+        gts_media = upload_media(creds, file_path, file.get('comment'))
+    save_status_mapping(file.get('id'), gts_media.get("id"), gts_media.get('url'))
+    return gts_media_id
+
+def try_to_find_file(file_path):
+    if os.path.exists(file_path):
+        return file_path
+    glob_str = f'{file_path}.*'
+    log_to_logfile(f'File not found at {file_path}, trying glob {glob_str}')
+    other_files = glob.glob(glob_str)
+    if len(other_files) == 1:
+        return other_files[0]
+    error_text = f'File not found: {file_path} or glob returned too many results: {other_files}'
+    log_to_logfile(error_text)
+    return None
+
+def upload_media_dryrun(creds, file_path, description):
+    log_to_logfile('DRY RUN - making some stuff up')
+    fake_id = uuid.uuid4()
+    return {
+        'url': f'{INSTANCE_BASE_URL}fileserver/{fake_id}/attachments/{fake_id}/original/attachment.jpeg',
+        'id': str(fake_id)}
+
 def upload_media(creds, file_path, description):
     access_token = creds.get('access_token')
     if not access_token:
@@ -90,6 +122,7 @@ def upload_media(creds, file_path, description):
     payload = {
         'description': description
     }
+    log_to_logfile(f'Attempting to upload {file_path} with payload: {payload}')
     files = {'file': open(file_path, 'rb')}
     response = requests.post(
         MEDIA_URL,
@@ -170,9 +203,6 @@ def this_note_sucks_sorry(note, reason):
 
 def process_note(creds, note):
     # Simple cases to skip, at least for now.
-    if note.get('files') or note.get('fileIds'):
-        this_note_sucks_sorry(note, 'has files attached')
-        return
     if note.get('renoteId'):
         this_note_sucks_sorry(note, 'is a renote')
         return
@@ -218,8 +248,21 @@ def process_note(creds, note):
             this_note_sucks_sorry(note, 'is a reply but the parent note was not found, so skipping')
             return
 
+    if note.get('files') or note.get('fileIds'):
+        # files contains the details needed to upload the media, and fileIds is just the IDs
+        for file in note.get('files', []):
+          if not get_existing_status_mapping(file.get('id')):
+            handle_file_situation(creds, file)
+          gts_media_id = get_existing_status_mapping(file.get('id')).get('opensocial_id')
+          if not gts_media_id:
+            this_note_sucks_sorry(note, f'uploading file {file.get("name")} failed')
+          if 'media_ids' not in payload:
+            payload['media_ids'] = []
+          payload['media_ids'].append(gts_media_id)
+          log_to_logfile(f'  attached media {gts_media_id} for file {file.get("id")}; new payload: {payload}')
+
     log_to_logfile('-----')
-    log_to_logfile('cool note: ' + note)
+    log_to_logfile(f'cool note: {note}')
     log_to_logfile(payload)
     response = None
     if DRY_RUN:
