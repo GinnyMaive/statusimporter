@@ -1,6 +1,8 @@
-notes.json
-credentials.json
+exports/*
+!exports/test/
+!exports/test/files/
+.DS_Store
 application.json
-exports/
-files/
+credentials.json
 status_map.json
+statusimporter.log

@@ -1,3 +1,4 @@
+from datetime import datetime
 import os
 import json
 import time
@@ -8,16 +9,22 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 import requests
 
 # Configuration
-DELAY_BETWEEN_REQUESTS = 2 # seconds
 INSTANCE_BASE_URL = 'https://transister.social/'
-AUTHORIZATION_URL = INSTANCE_BASE_URL + 'oauth/authorize'
-TOKEN_URL = INSTANCE_BASE_URL + 'oauth/token'
-STATUS_URL = INSTANCE_BASE_URL + 'api/v1/statuses'
-MEDIA_URL = INSTANCE_BASE_URL + 'api/v1/media'
+DELAY_BETWEEN_REQUESTS = 2 # seconds
+# TODO: turn into a flag or something
+BASE_EXPORT_DIR = 'exports/test/' # where notes.json and the files/ subdir are located
+DRY_RUN = True
 
-CREDENTIALS_FILE = 'credentials.json'
-APPLICATION_FILE = 'application.json'
-STATUS_MAPPING_FILE = 'status_map.json'
+AUTHORIZATION_URL = f'{INSTANCE_BASE_URL}oauth/authorize'
+TOKEN_URL = f'{INSTANCE_BASE_URL}oauth/token'
+STATUS_URL = f'{INSTANCE_BASE_URL}api/v1/statuses'
+MEDIA_URL = f'{INSTANCE_BASE_URL}api/v1/media'
+
+CREDENTIALS_FILE = f'{BASE_EXPORT_DIR}credentials.json'
+APPLICATION_FILE = f'{BASE_EXPORT_DIR}application.json'
+STATUS_MAPPING_FILE = f'{BASE_EXPORT_DIR}status_map.json'
+LOG_FILE = f'{BASE_EXPORT_DIR}statusimporter.log'
+
 # These will be read and set from APPLICATION_FILE
 CLIENT_ID = ''
 CLIENT_SECRET = ''
@@ -90,16 +97,22 @@ def upload_media(creds, file_path, description):
         data=payload,
         files=files)
     response.raise_for_status()
-    print('Uploaded media:', response.json())
+    log_to_logfile(f'Uploaded media: {response.json()}')
     return response.json()
 
 def post_status_dryrun(creds, payload):
-    print('DRY RUN - making some stuff up')
+    log_to_logfile('DRY RUN - making some stuff up')
     fake_id = uuid.uuid4()
     return {
-        'uri': INSTANCE_BASE_URL + 'users/gintoxicating/statuses/' + str(fake_id),
-        'url': INSTANCE_BASE_URL + '@gintoxicating/statuses/' + str(fake_id),
+        'uri': f'{INSTANCE_BASE_URL}users/gintoxicating/statuses/{fake_id}',
+        'url': f'{INSTANCE_BASE_URL}@gintoxicating/statuses/{fake_id}',
         'id': str(fake_id)}
+
+def log_to_logfile(message):
+    full_message = f'[{datetime.now().strftime("%Y-%m-%d %H:%M:%S")}] {message}'
+    print(full_message)
+    with open(LOG_FILE, 'a+') as f:
+        f.write(full_message + '\n')
 
 def get_existing_status_mapping(sharkey_id):
     if os.path.exists(STATUS_MAPPING_FILE):
@@ -109,13 +122,13 @@ def get_existing_status_mapping(sharkey_id):
     return None
 
 def save_status_mapping(sharkey_id, opensocial_id, opensocial_url):
-    print('Saving mapping:', sharkey_id, '->', opensocial_id)
+    log_to_logfile(f'Saving mapping: {sharkey_id} -> {opensocial_id}')
     mapping = {}
     if os.path.exists(STATUS_MAPPING_FILE):
         with open(STATUS_MAPPING_FILE, 'r') as f:
             mapping = json.load(f)
     if sharkey_id in mapping:
-        print('!@@@!@@*** Warning: overwriting existing mapping for', sharkey_id)
+        log_to_logfile(f'!@@@!@@*** Warning: overwriting existing mapping for {sharkey_id}')
     mapping[sharkey_id] = {'opensocial_id': opensocial_id, 'opensocial_url': opensocial_url}
     with open(STATUS_MAPPING_FILE, 'w') as f:
         json.dump(mapping, f, indent=2)
@@ -139,18 +152,20 @@ def post_status(creds, payload):
 def authorize():
     creds = load_credentials()
     if creds:
-        print('Credentials loaded')
+        log_to_logfile('Credentials loaded')
     else:
         auth_code = get_auth_code()
         token_data = get_token(auth_code)
         save_credentials(token_data)
-        print('Credentials saved')
+        log_to_logfile('Credentials saved')
         creds = load_credentials()
     return creds
 
 def this_note_sucks_sorry(note, reason):
     global SKIPPED
-    print('***** Note', note.get('id'), 'will be skipped (reason:', reason, ')\n           ', note.get('text'))
+    message = f'''Note {note.get('id')} will be skipped (reason: {reason})
+                {note.get('text')}'''
+    log_to_logfile(message)
     SKIPPED += 1
 
 def process_note(creds, note):
@@ -203,18 +218,21 @@ def process_note(creds, note):
             this_note_sucks_sorry(note, 'is a reply but the parent note was not found, so skipping')
             return
 
-    print('-----')
-    print('cool note: ', note)
-    print(payload)
-    # response = post_status(creds, payload)
-    response = post_status_dryrun(creds, payload)
-    print('   ID: ', response.get('id'))
-    print('   URI: ', response.get('uri'))
-    print('raw response:', response)
+    log_to_logfile('-----')
+    log_to_logfile('cool note: ' + note)
+    log_to_logfile(payload)
+    response = None
+    if DRY_RUN:
+      response = post_status_dryrun(creds, payload)
+    else:
+      response = post_status(creds, payload)
+    log_to_logfile(f'''   ID: {response.get('id')}''')
+    log_to_logfile(f'''   URI: {response.get('uri')}''')
+    log_to_logfile(f'raw response: {response}')
     save_status_mapping(note.get('id'), response.get('id'), response.get('url'))
-    print('  sleeping', DELAY_BETWEEN_REQUESTS, 'seconds to respect rate limits')
+    log_to_logfile(f'  sleeping {DELAY_BETWEEN_REQUESTS} seconds to respect rate limits')
     time.sleep(DELAY_BETWEEN_REQUESTS)
-    print('-----')
+    log_to_logfile('-----')
     return
 
 
@@ -226,15 +244,19 @@ def set_app_config():
             CLIENT_ID = app_config.get('client_id', CLIENT_ID)
             CLIENT_SECRET = app_config.get('client_secret', CLIENT_SECRET)
     else:
-        print(APPLICATION_FILE, 'should exist with your client_id and client_secret!')
+        print(f'{APPLICATION_FILE} should exist with your client_id and client_secret!')
+
+def export_filename(filename):
+    return f'{BASE_EXPORT_DIR}{filename}'
 
 def print_notes():
+    notes_file = export_filename('notes.json')
+    log_to_logfile(f'Starting up import run of {BASE_EXPORT_DIR}; notes file: {notes_file}')
     set_app_config()
     creds = authorize()
     if not creds:
         print('No credentials found. Please authorize first.')
         return
-    notes_file = 'notes-test.json'
     if os.path.exists(notes_file):
         with open(notes_file, 'r') as f:
             notes = json.load(f)
@@ -242,7 +264,8 @@ def print_notes():
                 process_note(creds, note)
     else:
         print(f'{notes_file} not found.')
-    print('  **! Skipped', SKIPPED, 'notes!')
+    log_to_logfile(f'  **! Skipped {SKIPPED} notes!')
+    log_to_logfile(f'Log file: {LOG_FILE}')
 
 def main():
     print_notes()
