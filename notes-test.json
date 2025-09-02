@@ -52,46 +52,6 @@
 			"reactionAcceptance": null
 		},
 		{
-			"_comment": "note with file test",
-			"id": "a4ulcj359u4j003d",
-			"text": "this happens to me a lot and i'm in an eternal cycle of blaming myself and blaming men",
-			"createdAt": "2025-03-02T02:43:32.129Z",
-			"fileIds": [
-				"a4ulax439u4j0036"
-			],
-			"files": [
-				{
-					"id": "a4ulax439u4j0036",
-					"createdAt": "2025-03-02T02:42:16.995Z",
-					"name": "9lz82w.jpg.webp",
-					"type": "image/webp",
-					"md5": "820384e8b2bfe64575f53c77c9730a52",
-					"size": 49270,
-					"isSensitive": false,
-					"blurhash": "e38zrvNZ00^k$*B.-p}[9Z9Z#8NGJ*-psVIVj[%2x[Rj9txb-pNGNG",
-					"properties": {
-						"width": 500,
-						"height": 593
-					},
-					"url": "https://cdn.transfem.social/files/8fc7e2be-a860-4fc2-aa15-20168a0ee7df.webp",
-					"thumbnailUrl": "https://cdn.transfem.social/files/thumbnail-93d41ead-a609-4d5a-8352-5e8cf0fc3e1e.webp",
-					"comment": "\"My body is a machine meme\" that reads\n\nMy body is a machine that turns \"BI-CURIOUS CIS MEN\" into \"CHEATERS\"",
-					"folderId": null,
-					"folder": null,
-					"userId": "a3m7j6tn4d8301bg",
-					"user": null
-				}
-			],
-			"replyId": "a4ul8w14hly801j5",
-			"renoteId": null,
-			"poll": null,
-			"cw": null,
-			"visibility": "public",
-			"visibleUserIds": [],
-			"localOnly": false,
-			"reactionAcceptance": null
-		},
-		{
 			"_comment": "parent note that gets self-replied to",
 			"id": "a4g1mp4eupmo00zj",
 			"text": "\"why is the list of projects called an `index` though?\"\n\nme: \".... ... ... because that is the word that denotes this concept? well and i didnt wanna argue about the spelling of `catalog` every few weeks for the rest of my life\"",
@@ -220,6 +180,46 @@
 			"visibleUserIds": [],
 			"localOnly": true,
 			"reactionAcceptance": null
-		}
+		},
+        {
+			"_comment": "note with file test",
+            "id": "a58a726dcd3w01yr",
+            "text": "ooo a space cowboy",
+            "createdAt": "2025-03-11T16:40:07.621Z",
+            "fileIds": [
+                "a58a580eo5ko022z"
+            ],
+            "files": [
+                {
+                    "id": "a58a580eo5ko022z",
+                    "createdAt": "2025-03-11T16:38:41.870Z",
+                    "name": "IMG_3051.jpeg",
+                    "type": "image/jpeg",
+                    "md5": "6a82c94575d3681fa4b9bb523be5522e",
+                    "size": 49379,
+                    "isSensitive": false,
+                    "blurhash": "eSQlX*E09dtRF|?IjFS4X8of%2-pkDWBbb~Ws:WYWBW;M{WBkCbGkC",
+                    "properties": {
+                        "width": 1290,
+                        "height": 250
+                    },
+                    "url": "https://cdn.transfem.social/files/webpublic-a5b39569-0b9c-4bd4-9aa9-0423d6593ede.webp",
+                    "thumbnailUrl": "https://cdn.transfem.social/files/thumbnail-47b0045e-11b7-49b6-b86b-7efc6f147ffb.webp",
+                    "comment": "A notification that someone named Maurice liked me (this is a reference to classic rock song \"the joker\" by Steve Miller band)",
+                    "folderId": null,
+                    "folder": null,
+                    "userId": "a3m7j6tn4d8301bg",
+                    "user": null
+                }
+            ],
+            "replyId": null,
+            "renoteId": null,
+            "poll": null,
+            "cw": null,
+            "visibility": "public",
+            "visibleUserIds": [],
+            "localOnly": false,
+            "reactionAcceptance": null
+        }
 	]
 }
