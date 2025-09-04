@@ -179,7 +179,11 @@ def post_status(creds, payload):
         headers=headers,
         json=payload
     )
-    response.raise_for_status()
+    log_to_logfile(f'Post status response: {response.status_code}: {response.reason}')
+    if response.status_code != 200:
+      error_str = response.json().get('error', '')
+      log_to_logfile(f'''Error posting status: {response.status_code} {error_str} {response}''')
+      return None
     return response.json()
 
 def authorize():
@@ -269,10 +273,11 @@ def process_note(creds, note):
       response = post_status_dryrun(creds, payload)
     else:
       response = post_status(creds, payload)
-    log_to_logfile(f'''   ID: {response.get('id')}''')
-    log_to_logfile(f'''   URI: {response.get('uri')}''')
     log_to_logfile(f'raw response: {response}')
-    save_status_mapping(note.get('id'), response.get('id'), response.get('url'))
+    if response:
+      log_to_logfile(f'''   ID: {response.get('id')}''')
+      log_to_logfile(f'''   URI: {response.get('uri')}''')
+      save_status_mapping(note.get('id'), response.get('id'), response.get('url'))
     log_to_logfile(f'  sleeping {DELAY_BETWEEN_REQUESTS} seconds to respect rate limits')
     time.sleep(DELAY_BETWEEN_REQUESTS)
     log_to_logfile('-----')

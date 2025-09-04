@@ -1,11 +1,13 @@
 # statusimporter
 
-A well-named Sharkey to Gotosocial status importer hackily created.
+A well-named Sharkey to GoToSocial status importer hackily created.
 
-* Change `INSTANCE_BASE_URL` at the top of main.py unless you are me
+* Before importing, you might want to import any/all custom emojis your posts use. If they are present, they will be used. If they are absent, you'll just see the old emoji short code. Adding them *after* importing will not use them in old statuses.
+  * How to do this is out of scope for this tool, but you can use [Slurp](https://github.com/VyrCossont/slurp)
+  * You can also just be fine with it and move on with life, which is what I did! The statuses will still import just without as much flair.
 * Set `BASE_EXPORT_DIR` to the base directory of your Sharkey export - it should at least
 have a `notes.json` file and a `files/` folder with any attachments to upload.
-* Create a new application in the GotoSocial Settings UI (eg, https://yourinstance.social/settings)
+* Create a new application in the GoToSocial Settings UI (eg, https://yourinstance.social/settings)
 * In that folder, create a file `application.json` with the client ID and client secret you get from there. It should look like this, but you put ur stuff in the quotes!
 
 ```
@@ -38,4 +40,40 @@ probably smart to do first.
   and remove the dry run fake IDs.
 * Buckle up it's gonna post some statuses! Good luck!
 * When you're done you probably want to delete `credentials.json` after you're all done.
-  * IDK oauth well enough to know if `application.json` is super scary but it alone won't grant account-level access. Oauth is wild so idk just delete them both if you want, you can get the `application.json` values from the Gotosocial Settings page again anyway.
+  * IDK oauth well enough to know if `application.json` is super scary but it alone won't grant account-level access. Oauth is wild so idk just delete them both if you want, you can get the `application.json` values from the GoToSocial Settings page again anyway.
+
+
+## FAQ
+
+#### What the hell this is awful
+
+Yes!
+
+#### You should ...
+
+Probably. I especially should improve logging if only because it's really really bad
+because it's the slapped-together output I used while writing the tool.
+
+Ideally at least it could spit out a simple map of `old_url` to either the `new_url`
+or the error/failure. You could probably do this pretty easily with the `status_map.json`
+file except for capturing statuses which failed to migrate.
+
+Oh and some rough approximation of how far it is (like notes processed out of notes total in the `notes.json` file).
+
+#### Why not just use [Slurp](https://github.com/VyrCossont/slurp)
+
+Slurp didn't work correctly with Sharkey exports.
+
+#### Why not just convert Sharkey exports to be Slurp compatible?
+
+Converting json to json and moving files around to match some spec I don't really know
+seemed like a bummer. At least this way I got a bit of experience working with the GTS API
+which might provoke me to do more stuff :3
+
+#### You should have used Go! GoToSocial uses Go!
+
+If I knew Go, yes. But if I had tried to build this in Go it would not exist.
+
+#### You should be ashamed of this code!
+
+Yeah I agree and I am. But it exists and seems to have worked for my statuses, so yay for me.
