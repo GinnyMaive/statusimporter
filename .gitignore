@@ -6,3 +6,4 @@ application.json
 credentials.json
 status_map.json
 statusimporter.log
+statusimporter.code-workspace
